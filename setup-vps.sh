@@ -103,11 +103,11 @@ install_service_files() {
     print_status "Installing service files..."
     
     # Copy all service files to the target directory
-    if [ -d "/tmp/distilbert-service" ]; then
-        cp -r /tmp/distilbert-service/* ${SERVICE_DIR}/
+    if [ -d "/root/DistriBERT-FastApi" ]; then
+        cp -r /root/DistriBERT-FastApi/* ${SERVICE_DIR}/
     else
-        print_error "Service files not found in /tmp/distilbert-service"
-        print_status "Please upload your service files to /tmp/distilbert-service first"
+        print_error "Service files not found in /root/DistriBERT-FastApi"
+        print_status "Please upload your service files to /root/DistriBERT-FastApi first"
         exit 1
     fi
     
