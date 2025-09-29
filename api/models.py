@@ -2,6 +2,39 @@ from pydantic import BaseModel, Field, validator
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
+class ChatRequest(BaseModel):
+    """Request model for chat conversation"""
+    message: str = Field(
+        ..., 
+        min_length=1, 
+        max_length=512, 
+        description="User message for chat",
+        example="Kapan jadwal kuliah Informatika besok?"
+    )
+    user_id: Optional[str] = Field(
+        None,
+        description="Optional user identifier for session tracking"
+    )
+    include_debug: bool = Field(
+        False, 
+        description="Include classification debug information"
+    )
+    
+    @validator('message')
+    def validate_message(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Message cannot be empty or just whitespace')
+        return v.strip()
+
+class ChatResponse(BaseModel):
+    """Response model for chat conversation"""
+    message: str = Field(..., description="Bot response message")
+    intent: str = Field(..., description="Detected intent category")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Classification confidence")
+    response_type: str = Field(..., description="Type of response (template, generated, etc.)")
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    debug_info: Optional[Dict[str, Any]] = Field(None, description="Debug information if requested")
+
 class ClassificationRequest(BaseModel):
     """Request model for single text classification"""
     text: str = Field(

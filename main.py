@@ -18,7 +18,8 @@ from api.models import (
     ClassificationRequest, ClassificationResponse,
     BatchClassificationRequest, BatchClassificationResponse,
     HealthResponse, ModelInfoResponse, IntentsListResponse,
-    TestClassificationRequest, ErrorResponse, SAMPLE_TEST_DATA
+    TestClassificationRequest, ErrorResponse, SAMPLE_TEST_DATA,
+    ChatRequest, ChatResponse
 )
 from utils.helpers import (
     setup_logging, monitor_performance, generate_request_id,
@@ -171,6 +172,7 @@ async def root():
         "model_loaded": distilbert_handler.is_loaded,
         "uptime_seconds": (datetime.utcnow() - service_start_time).total_seconds(),
         "endpoints": {
+            "chat": "/chat",
             "classify": "/classify",
             "batch_classify": "/batch-classify", 
             "health": "/health",
@@ -178,6 +180,106 @@ async def root():
             "intents": "/intents"
         }
     }
+
+@app.post("/chat", response_model=ChatResponse, tags=["Chat"])
+@monitor_performance("chat")
+async def chat_conversation(
+    request: ChatRequest,
+    authenticated: bool = Depends(verify_api_key)
+):
+    """
+    💬 **Chat conversation endpoint with intelligent responses**
+    
+    Processes user messages, classifies intent, and provides appropriate responses using templates.
+    
+    **Example Usage:**
+    ```python
+    {
+        "message": "Kapan jadwal kuliah besok?",
+        "user_id": "user123",
+        "include_debug": false
+    }
+    ```
+    
+    **Returns:**
+    - Intelligent response based on classified intent
+    - Intent classification and confidence
+    - Optional debug information
+    """
+    try:
+        import random
+        
+        # Check cache first for classification
+        if settings.enable_caching:
+            cached_result = classification_cache.get(request.message)
+            if cached_result:
+                logger.debug(f"💾 Cache hit for message: {request.message[:50]}...")
+                classification_result = cached_result
+            else:
+                # Perform classification
+                if not distilbert_handler.is_loaded:
+                    raise ModelNotLoadedError("DistilBERT model not loaded")
+                
+                classification_result = await distilbert_handler.classify_intent(
+                    request.message, 
+                    request.include_debug
+                )
+                
+                # Cache result if confidence is high
+                if classification_result['confidence'] > 0.5:
+                    classification_cache.set(request.message, classification_result)
+        else:
+            # Perform classification without caching
+            if not distilbert_handler.is_loaded:
+                raise ModelNotLoadedError("DistilBERT model not loaded")
+            
+            classification_result = await distilbert_handler.classify_intent(
+                request.message, 
+                request.include_debug
+            )
+        
+        # Generate appropriate response based on intent
+        intent = classification_result['intent']
+        confidence = classification_result['confidence']
+        
+        # Get response template based on intent
+        if intent in RESPONSE_TEMPLATES and confidence > 0.3:
+            # Use template responses for recognized intents
+            response_options = RESPONSE_TEMPLATES[intent]
+            bot_message = random.choice(response_options)
+            response_type = "template"
+        else:
+            # Fallback response for low confidence or unknown intents
+            bot_message = "Maaf, saya tidak yakin memahami pertanyaan Anda. Bisa tolong diulang dengan lebih spesifik? Atau hubungi layanan bantuan kampus untuk informasi lebih lanjut."
+            response_type = "fallback"
+        
+        # Prepare debug info if requested
+        debug_info = None
+        if request.include_debug:
+            debug_info = {
+                "classification": classification_result,
+                "available_templates": len(RESPONSE_TEMPLATES.get(intent, [])),
+                "response_selection": response_type,
+                "user_id": request.user_id
+            }
+        
+        return ChatResponse(
+            message=bot_message,
+            intent=intent,
+            confidence=confidence,
+            response_type=response_type,
+            debug_info=debug_info
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ Chat error: {str(e)}")
+        # Return a friendly error response instead of raising exception
+        return ChatResponse(
+            message="Maaf, saya mengalami gangguan sementara. Silakan coba lagi dalam beberapa saat atau hubungi layanan bantuan kampus.",
+            intent="error",
+            confidence=0.0,
+            response_type="error"
+        )
 
 @app.post("/classify", response_model=ClassificationResponse, tags=["Classification"])
 @monitor_performance("classify_single")

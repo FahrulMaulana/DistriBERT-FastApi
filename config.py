@@ -83,24 +83,7 @@ INTENT_KEYWORDS: Dict[str, List[str]] = {
     ]
 }
 
-# Response templates for fallback
-RESPONSE_TEMPLATES: Dict[str, List[str]] = {
-    "jadwal_kuliah": [
-        "Untuk melihat jadwal kuliah terbaru, silakan login ke portal akademik atau hubungi bagian akademik.",
-    ],
-    "pembayaran": [
-        "Informasi pembayaran UKT dapat dilihat di portal keuangan atau hubungi bagian keuangan.",
-    ],
-    "reset_password": [
-        "Untuk reset password, kunjungi halaman forgot password di portal atau hubungi IT support.",
-    ],
-    "faq_informasi": [
-        "Informasi lengkap tersedia di website resmi atau hubungi bagian kemahasiswaan.",
-    ],
-    "smalltalk": [
-        "Halo! Saya siap membantu Anda dengan informasi seputar kampus.",
-    ]
-}
+# Response templates for chat
 RESPONSE_TEMPLATES: Dict[str, List[str]] = {
     "jadwal_kuliah": [
         "Untuk melihat jadwal kuliah, silakan login ke portal akademik atau hubungi bagian akademik.",
