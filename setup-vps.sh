@@ -11,7 +11,7 @@ echo "🚀 Setting up DistilBERT Service on VPS..."
 SERVICE_NAME="distilbert-service"
 SERVICE_DIR="/opt/chatbot/services/${SERVICE_NAME}"
 SERVICE_USER="distilbert"
-PYTHON_VERSION="3.9"
+PYTHON_VERSION="3.11"
 
 # Colors for output
 RED='\033[0;31m'
