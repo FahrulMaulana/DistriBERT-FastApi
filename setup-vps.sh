@@ -56,7 +56,8 @@ install_python() {
     print_status "Installing Python ${PYTHON_VERSION}..."
     
     # Install Python and pip
-    apt install -y python${PYTHON_VERSION} python${PYTHON_VERSION}-pip python${PYTHON_VERSION}-venv python${PYTHON_VERSION}-dev
+    apt install -y python3-venv python3-pip python3-dev
+
     
     # Install build tools
     apt install -y build-essential gcc g++ curl wget git
