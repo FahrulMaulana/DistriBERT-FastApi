@@ -128,7 +128,7 @@ class TestClassificationRequest(BaseModel):
     sample_type: str = Field(
         "random",
         description="Type of sample to test",
-        regex="^(random|all|specific)$"
+        pattern="^(random|all|specific)$"
     )
     intent_category: Optional[str] = Field(
         None,

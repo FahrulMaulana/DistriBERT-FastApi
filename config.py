@@ -41,8 +41,10 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
     
-    class Config:
-        env_file = ".env"
+    model_config = {
+        "env_file": ".env",
+        "protected_namespaces": ()
+    }
 
 # Global settings instance
 settings = Settings()
