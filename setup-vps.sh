@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# DistilBERT Service Setup Script for VPS
+# DistilBERT Service Setup Script for VPS (Fixed Version)
 # This script sets up the DistilBERT FastAPI service on your VPS
 
 set -e  # Exit on any error
@@ -12,6 +12,7 @@ SERVICE_NAME="distilbert-service"
 SERVICE_DIR="/opt/chatbot/services/${SERVICE_NAME}"
 SERVICE_USER="distilbert"
 PYTHON_VERSION="3.11"
+SOURCE_DIR="/root/services/distilbert-service"
 
 # Colors for output
 RED='\033[0;31m'
@@ -51,18 +52,17 @@ update_system() {
     print_success "System packages updated"
 }
 
-# Function to install Python 3.9
+# Function to install Python
 install_python() {
     print_status "Installing Python ${PYTHON_VERSION}..."
     
     # Install Python and pip
     apt install -y python3-venv python3-pip python3-dev
-
     
     # Install build tools
     apt install -y build-essential gcc g++ curl wget git
     
-    # Update alternatives to use Python 3.9 as default
+    # Update alternatives
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python${PYTHON_VERSION} 1
     update-alternatives --install /usr/bin/pip3 pip3 /usr/bin/pip${PYTHON_VERSION} 1
     
@@ -102,18 +102,26 @@ create_directories() {
 install_service_files() {
     print_status "Installing service files..."
     
-    # Copy all service files to the target directory
-    if [ -d "/root/DistriBERT-FastApi" ]; then
+    # Check for source directory
+    if [ -d "${SOURCE_DIR}" ]; then
+        print_status "Copying files from ${SOURCE_DIR}..."
+        cp -r ${SOURCE_DIR}/* ${SERVICE_DIR}/
+    elif [ -d "/root/DistriBERT-FastApi" ]; then
+        print_status "Copying files from /root/DistriBERT-FastApi..."
         cp -r /root/DistriBERT-FastApi/* ${SERVICE_DIR}/
     else
-        print_error "Service files not found in /root/DistriBERT-FastApi"
-        print_status "Please upload your service files to /root/DistriBERT-FastApi first"
+        print_error "Service files not found!"
+        print_status "Please ensure your files are in one of these locations:"
+        print_status "  - ${SOURCE_DIR}"
+        print_status "  - /root/DistriBERT-FastApi"
         exit 1
     fi
     
     # Set permissions
     chown -R ${SERVICE_USER}:${SERVICE_USER} ${SERVICE_DIR}
-    chmod +x ${SERVICE_DIR}/main.py
+    if [ -f "${SERVICE_DIR}/main.py" ]; then
+        chmod +x ${SERVICE_DIR}/main.py
+    fi
     
     print_success "Service files installed"
 }
@@ -128,13 +136,17 @@ create_venv() {
     sudo -u ${SERVICE_USER} python3 -m venv venv
     
     # Activate and install requirements
-    sudo -u ${SERVICE_USER} bash -c "
-        source venv/bin/activate && \
-        pip install --upgrade pip && \
-        pip install -r requirements.txt
-    "
-    
-    print_success "Virtual environment created and dependencies installed"
+    if [ -f "requirements.txt" ]; then
+        sudo -u ${SERVICE_USER} bash -c "
+            source venv/bin/activate && \
+            pip install --upgrade pip && \
+            pip install -r requirements.txt
+        "
+        print_success "Virtual environment created and dependencies installed"
+    else
+        print_error "requirements.txt not found!"
+        exit 1
+    fi
 }
 
 # Function to create systemd service
@@ -153,7 +165,7 @@ User=${SERVICE_USER}
 Group=${SERVICE_USER}
 WorkingDirectory=${SERVICE_DIR}
 Environment=PATH=${SERVICE_DIR}/venv/bin
-ExecStart=${SERVICE_DIR}/venv/bin/python main.py
+ExecStart=${SERVICE_DIR}/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
 ExecReload=/bin/kill -HUP \$MAINPID
 Restart=always
 RestartSec=5
@@ -186,14 +198,26 @@ EOF
 setup_environment() {
     print_status "Setting up environment configuration..."
     
-    # Create .env file if it doesn't exist
+    # Create .env file
     if [ ! -f "${SERVICE_DIR}/.env" ]; then
-        cp ${SERVICE_DIR}/.env.example ${SERVICE_DIR}/.env
-        
-        # Update with VPS-specific settings
-        sed -i "s/SERVICE_HOST=0.0.0.0/SERVICE_HOST=0.0.0.0/" ${SERVICE_DIR}/.env
-        sed -i "s/SERVICE_PORT=8000/SERVICE_PORT=8000/" ${SERVICE_DIR}/.env
-        sed -i "s/LOG_LEVEL=INFO/LOG_LEVEL=INFO/" ${SERVICE_DIR}/.env
+        cat > ${SERVICE_DIR}/.env << 'EOF'
+# Service Configuration
+SERVICE_HOST=0.0.0.0
+SERVICE_PORT=8000
+SERVICE_NAME=distilbert-service
+
+# Model Configuration
+MODEL_NAME=distilbert-base-uncased
+MODEL_CACHE_DIR=./models/cache
+CONFIDENCE_THRESHOLD=0.5
+
+# Logging
+LOG_LEVEL=INFO
+LOG_FILE=./logs/service.log
+
+# Environment
+ENVIRONMENT=production
+EOF
         
         chown ${SERVICE_USER}:${SERVICE_USER} ${SERVICE_DIR}/.env
         chmod 600 ${SERVICE_DIR}/.env
@@ -341,13 +365,6 @@ show_final_instructions() {
     echo "   curl -X POST http://localhost:8000/classify \\"
     echo "        -H 'Content-Type: application/json' \\"
     echo "        -d '{\"text\": \"Kapan jadwal kuliah besok?\"}'"
-    echo
-    if [[ $setup_nginx_choice =~ ^[Yy]$ ]]; then
-        echo "🌐 Nginx Configuration:"
-        echo "   - Domain: ${domain_name}"
-        echo "   - Nginx Config: /etc/nginx/sites-available/${SERVICE_NAME}"
-        echo "   - URL: http://${domain_name}"
-    fi
 }
 
 # Main execution
