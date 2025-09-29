@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  distilbert-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chatbot-distilbert-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8000
+      - LOG_LEVEL=INFO
+      - CONFIDENCE_THRESHOLD=0.7
+      - ENABLE_CACHING=true
+      - API_KEY=distilbert-service-2024
+    volumes:
+      - ./models:/app/models
+      - ./logs:/app/logs
+      - ./.env:/app/.env
+    networks:
+      - chatbot-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  chatbot-network:
+    driver: bridge
+    external: false
+
+volumes:
+  models-cache:
+    driver: local
+  service-logs:
+    driver: local
