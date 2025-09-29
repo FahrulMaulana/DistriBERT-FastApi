@@ -1,6 +1,6 @@
 import os
 from typing import List, Dict
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Service Configuration
