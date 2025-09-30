@@ -59,26 +59,30 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI application
 app = FastAPI(
-    title="DistilBERT Campus Intent Classification Service",
+    title="DistilBERT General Chatbot Service",
     description="""
-    🤖 **Campus Chatbot Intent Classification Service**
+    🤖 **General Purpose Chatbot with Intent Classification**
     
-    This service provides intelligent intent classification for campus chatbot interactions using DistilBERT neural networks combined with keyword matching for optimal accuracy.
+    This service provides intelligent intent classification for general conversations using DistilBERT neural networks combined with keyword matching for optimal accuracy.
     
     **Features:**
     - ✨ Hybrid classification (Neural Network + Keywords)
-    - 🎯 Campus-specific intent categories
+    - � General purpose intent categories
     - 🚀 High-performance batch processing
     - 📊 Detailed confidence scoring
     - 🔍 Comprehensive debugging information
     - 💾 Smart caching for faster responses
     
     **Available Intents:**
-    - `jadwal_kuliah` - Schedule and class information
-    - `pembayaran` - Payment and tuition inquiries  
-    - `reset_password` - Account and authentication help
-    - `faq_informasi` - General campus information
-    - `smalltalk` - Casual conversation and greetings
+    - `greeting` - Greetings and salutations
+    - `question` - General questions and inquiries
+    - `help_request` - Help and assistance requests
+    - `information` - Information seeking
+    - `weather` - Weather related questions
+    - `food_recipe` - Food and recipe questions
+    - `technology` - Technology related questions
+    - `smalltalk` - Casual conversation
+    - `goodbye` - Farewell messages
     - `unknown` - Unrecognized intents
     """,
     version="1.0.0",
@@ -166,7 +170,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 async def root():
     """Root endpoint - service information"""
     return {
-        "service": "DistilBERT Campus Intent Classification",
+        "service": "DistilBERT General Chatbot Service",
         "version": "1.0.0",
         "status": "running",
         "model_loaded": distilbert_handler.is_loaded,
@@ -438,11 +442,15 @@ async def get_available_intents():
     Returns all supported intent categories that the model can classify.
     """
     descriptions = {
-        "jadwal_kuliah": "Schedule and class information queries - academic timetables, course schedules, exam dates",
-        "pembayaran": "Payment and tuition related questions - UKT payments, fees, billing information", 
-        "reset_password": "Account and authentication issues - password resets, login problems, access recovery",
-        "faq_informasi": "General campus information requests - scholarships, graduation, academic procedures",
-        "smalltalk": "Casual conversation and greetings - hello messages, thank you, general politeness",
+        "greeting": "Greetings and salutations - hello messages, good morning, welcome interactions",
+        "question": "General questions and inquiries - what, how, when, where, why questions", 
+        "help_request": "Help and assistance requests - asking for help, support, guidance",
+        "information": "Information seeking - requests for data, facts, explanations, details",
+        "weather": "Weather related questions - temperature, forecast, climate inquiries",
+        "food_recipe": "Food and recipe questions - cooking instructions, ingredients, dishes",
+        "technology": "Technology related questions - computers, software, apps, gadgets",
+        "smalltalk": "Casual conversation - how are you, thank you, general politeness",
+        "goodbye": "Farewell messages - goodbye, see you later, take care",
         "unknown": "Unrecognized or ambiguous intents that don't fit other categories"
     }
     

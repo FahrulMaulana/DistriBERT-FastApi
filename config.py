@@ -14,14 +14,18 @@ class Settings(BaseSettings):
     max_sequence_length: int = 512  # Longer for QA context
     batch_size: int = 16
     
-    # Intent Labels for Campus Chatbot
+    # Intent Labels for General Chatbot
     intent_labels: List[str] = [
-        "jadwal_kuliah",    # 0 - Schedule and class information
-        "pembayaran",       # 1 - Payment and tuition inquiries  
-        "reset_password",   # 2 - Account and authentication help
-        "faq_informasi",    # 3 - General campus information
-        "smalltalk",        # 4 - Casual conversation and greetings
-        "unknown"           # 5 - Unrecognized intents
+        "greeting",         # 0 - Greetings and salutations
+        "question",         # 1 - General questions and inquiries
+        "help_request",     # 2 - Help and assistance requests
+        "information",      # 3 - Information seeking
+        "weather",          # 4 - Weather related questions
+        "food_recipe",      # 5 - Food and recipe questions
+        "technology",       # 6 - Technology related questions
+        "smalltalk",        # 7 - Casual conversation
+        "goodbye",          # 8 - Farewell messages
+        "unknown"           # 9 - Unrecognized intents
     ]
     
     # Security
@@ -49,65 +53,100 @@ class Settings(BaseSettings):
 # Global settings instance
 settings = Settings()
 
-# Enhanced keyword patterns based on campus dataset
+# Enhanced keyword patterns for general chatbot
 INTENT_KEYWORDS: Dict[str, List[str]] = {
-    "jadwal_kuliah": [
-        "jadwal", "kuliah", "kelas", "mata kuliah", "matkul", 
-        "jam", "ruang", "dosen", "ujian", "uts", "uas", 
-        "semester", "hari", "waktu", "schedule", "class",
-        "course", "lecture", "exam", "midterm", "final"
+    "greeting": [
+        "halo", "hai", "hello", "hi", "selamat pagi", "selamat siang", 
+        "selamat sore", "selamat malam", "good morning", "good afternoon",
+        "good evening", "good night", "hey", "morning", "evening"
     ],
-    "pembayaran": [
-        "bayar", "ukt", "pembayaran", "biaya", "cicilan", 
-        "tagihan", "lunas", "transfer", "virtual account", 
-        "va", "spp", "keuangan", "payment", "fee",
-        "tuition", "installment", "billing", "finance"
+    "question": [
+        "apa", "bagaimana", "kapan", "dimana", "mengapa", "kenapa",
+        "what", "how", "when", "where", "why", "who", "which",
+        "siapa", "mana", "berapa", "bisakah", "dapatkah", "can", "could"
     ],
-    "reset_password": [
-        "password", "kata sandi", "login", "akun", "reset",
-        "lupa", "forgot", "masuk", "sign in", "account",
-        "username", "user", "auth", "authentication",
-        "access", "credentials", "recover"
+    "help_request": [
+        "bantuan", "tolong", "help", "assist", "bantu", "mohon",
+        "please", "bisa bantu", "could you help", "need help",
+        "butuh bantuan", "minta tolong", "assistance"
     ],
-    "faq_informasi": [
-        "informasi", "info", "beasiswa", "wisuda", "pkl",
-        "skripsi", "thesis", "magang", "cuti", "akademik",
-        "transkrip", "nilai", "grade", "graduation",
-        "scholarship", "internship", "academic", "transcript"
+    "information": [
+        "informasi", "info", "berita", "news", "data", "fakta",
+        "information", "details", "penjelasan", "explanation",
+        "tahu", "know", "tentang", "about", "mengenai", "regarding"
+    ],
+    "weather": [
+        "cuaca", "hujan", "panas", "dingin", "ujan", "weather",
+        "temperature", "suhu", "iklim", "climate", "cerah", "mendung",
+        "sunny", "cloudy", "rainy", "hot", "cold", "warm"
+    ],
+    "food_recipe": [
+        "makanan", "food", "resep", "recipe", "masak", "cook",
+        "cooking", "memasak", "bahan", "ingredient", "hidangan",
+        "dish", "menu", "makan", "eat", "eating", "restoran", "restaurant"
+    ],
+    "technology": [
+        "teknologi", "technology", "komputer", "computer", "software",
+        "hardware", "internet", "programming", "coding", "aplikasi",
+        "application", "app", "sistem", "system", "gadget", "smartphone"
     ],
     "smalltalk": [
-        "halo", "hai", "selamat", "terima kasih", "tolong",
-        "bantuan", "hello", "hi", "thanks", "help",
-        "morning", "pagi", "siang", "malam", "good",
-        "please", "sorry", "excuse", "welcome"
+        "bagaimana kabar", "apa kabar", "how are you", "terima kasih",
+        "thanks", "thank you", "maaf", "sorry", "permisi", "excuse me",
+        "senang", "happy", "sedih", "sad", "baik", "good", "fine"
+    ],
+    "goodbye": [
+        "selamat tinggal", "goodbye", "bye", "see you", "sampai jumpa",
+        "dadah", "farewell", "until next time", "take care",
+        "selamat jalan", "good bye", "bye bye"
     ]
 }
 
-# Response templates for chat
+# Response templates for general chatbot
 RESPONSE_TEMPLATES: Dict[str, List[str]] = {
-    "jadwal_kuliah": [
-        "Untuk melihat jadwal kuliah, silakan login ke portal akademik atau hubungi bagian akademik.",
-        "Jadwal kuliah dapat dilihat di sistem informasi akademik. Apakah ada mata kuliah tertentu yang ingin ditanyakan?",
-        "Silakan cek jadwal terbaru di portal mahasiswa atau hubungi koordinator program studi Anda."
+    "greeting": [
+        "Halo! Selamat datang! Ada yang bisa saya bantu hari ini?",
+        "Hai! Saya di sini untuk membantu Anda. Silakan tanyakan apa saja.",
+        "Selamat pagi! Semoga hari Anda menyenangkan. Bagaimana saya bisa membantu?"
     ],
-    "pembayaran": [
-        "Untuk pembayaran UKT, silakan login ke portal keuangan atau kunjungi bank mitra kampus.",
-        "Pembayaran dapat dilakukan melalui virtual account yang tersedia di portal mahasiswa.",
-        "Hubungi bagian keuangan untuk informasi lebih lanjut tentang pembayaran semester."
+    "question": [
+        "Itu pertanyaan yang menarik! Saya akan mencoba membantu menjawabnya.",
+        "Terima kasih atas pertanyaannya. Biarkan saya membantu Anda mencari jawabannya.",
+        "Saya akan berusaha memberikan informasi yang Anda butuhkan."
     ],
-    "reset_password": [
-        "Untuk reset password, silakan kunjungi halaman reset password di portal atau hubungi IT support.",
-        "Anda dapat mereset password melalui email recovery atau hubungi admin sistem.",
-        "Silakan hubungi helpdesk IT dengan membawa KTM untuk reset password akun Anda."
+    "help_request": [
+        "Tentu saja! Saya siap membantu Anda. Silakan jelaskan apa yang Anda butuhkan.",
+        "Dengan senang hati saya akan membantu. Apa yang bisa saya lakukan untuk Anda?",
+        "Saya di sini untuk membantu. Silakan beri tahu saya apa yang Anda perlukan."
     ],
-    "faq_informasi": [
-        "Informasi lengkap tersedia di website resmi kampus atau hubungi bagian kemahasiswaan.",
-        "Silakan kunjungi pusat informasi mahasiswa atau check website resmi untuk info terbaru.",
-        "Untuk informasi lebih detail, hubungi bagian terkait atau kunjungi kantor kemahasiswaan."
+    "information": [
+        "Saya akan mencari informasi yang Anda butuhkan. Bisa tolong lebih spesifik?",
+        "Untuk informasi yang lebih akurat, bisa Anda jelaskan lebih detail tentang apa yang ingin diketahui?",
+        "Saya siap memberikan informasi. Topik apa yang ingin Anda ketahui lebih lanjut?"
+    ],
+    "weather": [
+        "Untuk informasi cuaca yang akurat, saya sarankan Anda mengecek aplikasi cuaca atau situs BMKG.",
+        "Saya tidak bisa memberikan prakiraan cuaca real-time, tapi Anda bisa mengecek aplikasi cuaca di ponsel Anda.",
+        "Informasi cuaca terkini bisa Anda dapatkan dari BMKG atau aplikasi cuaca terpercaya."
+    ],
+    "food_recipe": [
+        "Wah, menarik sekali! Untuk resep masakan, saya sarankan Anda mencari di website resep atau aplikasi memasak.",
+        "Saya tidak memiliki database resep lengkap, tapi Anda bisa mencari resep di internet atau bertanya pada chef profesional.",
+        "Untuk resep yang akurat dan detail, lebih baik konsultasi dengan ahli masak atau cari di sumber resep terpercaya."
+    ],
+    "technology": [
+        "Teknologi memang berkembang pesat! Untuk informasi teknis yang spesifik, mungkin perlu konsultasi dengan ahli IT.",
+        "Itu topik teknologi yang menarik. Untuk detail yang lebih teknis, saya sarankan mencari di dokumentasi resmi atau forum teknologi.",
+        "Bidang teknologi sangat luas. Bisa tolong lebih spesifik tentang aspek teknologi yang ingin dibahas?"
     ],
     "smalltalk": [
-        "Halo! Saya siap membantu Anda dengan informasi seputar kampus.",
-        "Hai! Ada yang bisa saya bantu hari ini?",
-        "Selamat datang! Silakan tanyakan apa saja yang ingin Anda ketahui."
+        "Terima kasih sudah bertanya! Saya baik-baik saja dan siap membantu Anda.",
+        "Saya senang bisa mengobrol dengan Anda! Ada hal lain yang ingin dibicarakan?",
+        "Ngobrol dengan Anda menyenangkan! Bagaimana hari Anda berjalan?"
+    ],
+    "goodbye": [
+        "Selamat tinggal! Terima kasih sudah menggunakan layanan saya. Sampai jumpa lagi!",
+        "Sampai jumpa! Jangan ragu untuk kembali jika butuh bantuan lagi.",
+        "Dadah! Semoga hari Anda menyenangkan. Take care!"
     ]
 }

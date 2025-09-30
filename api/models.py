@@ -183,39 +183,67 @@ class ErrorResponse(BaseModel):
 
 # Sample test data for validation
 SAMPLE_TEST_DATA = {
-    "jadwal_kuliah": [
-        "Kapan jadwal kuliah Informatika besok?",
-        "Jam berapa kuliah Algoritma hari ini?",
-        "Jadwal kuliah hari Senin gimana?",
-        "Ruang kuliah Pemrograman Web di mana?",
-        "Siapa dosen pengampu mata kuliah Database?"
+    "greeting": [
+        "Halo, selamat pagi!",
+        "Hai, apa kabar?",
+        "Good morning!",
+        "Hello there!",
+        "Selamat siang!"
     ],
-    "pembayaran": [
-        "Bagaimana cara bayar UKT?", 
-        "Berapa UKT untuk semester ini?",
-        "Cara pembayaran semester bagaimana?",
-        "Batas waktu pembayaran UKT kapan?",
-        "Bisa cicilan pembayaran semester?"
+    "question": [
+        "Apa itu artificial intelligence?",
+        "Bagaimana cara kerja internet?",
+        "Kapan Indonesia merdeka?",
+        "Siapa presiden pertama Indonesia?",
+        "Berapa jarak bumi ke bulan?"
     ],
-    "reset_password": [
-        "Saya lupa password akun saya",
-        "Reset password mahasiswa gimana?",
-        "Password saya tidak bisa login",
-        "Akun terkunci karena salah password",
-        "Bagaimana cara ganti password?"
+    "help_request": [
+        "Bisakah Anda membantu saya?",
+        "Saya butuh bantuan",
+        "Tolong bantu saya",
+        "Can you help me?",
+        "Mohon bantuannya"
     ],
-    "faq_informasi": [
-        "Dimana saya bisa dapat informasi beasiswa?",
-        "Info pendaftaran PKL bagaimana?",
-        "Informasi tentang wisuda",
-        "Syarat mengajukan cuti akademik",
-        "Cara mengurus transkrip nilai"
+    "information": [
+        "Saya ingin tahu tentang sejarah Indonesia",
+        "Beri saya informasi tentang kesehatan",
+        "Apa informasi terbaru tentang teknologi?",
+        "Saya perlu data tentang ekonomi",
+        "Informasi apa yang Anda miliki?"
+    ],
+    "weather": [
+        "Apakah besok hujan?",
+        "Bagaimana cuaca hari ini?",
+        "Berapa suhu udara sekarang?",
+        "Kapan musim hujan dimulai?",
+        "Cuaca besok cerah atau mendung?"
+    ],
+    "food_recipe": [
+        "Bagaimana cara masak nasi goreng?",
+        "Resep rendang yang enak gimana?",
+        "Bahan-bahan untuk membuat kue?",
+        "Cara memasak ayam bakar?",
+        "Resep masakan sederhana?"
+    ],
+    "technology": [
+        "Apa itu blockchain?",
+        "Bagaimana cara kerja AI?",
+        "Perbedaan hardware dan software?",
+        "Apa itu cloud computing?",
+        "Teknologi terbaru apa saja?"
     ],
     "smalltalk": [
-        "Halo, selamat pagi!",
-        "Hai bot, apa kabar?",
+        "Apa kabar Anda hari ini?",
+        "Bagaimana cuaca di sana?",
         "Terima kasih atas bantuannya",
-        "Selamat siang",
-        "Halo, saya butuh bantuan"
+        "Semoga harimu menyenangkan",
+        "Nice to meet you!"
+    ],
+    "goodbye": [
+        "Selamat tinggal!",
+        "Sampai jumpa lagi",
+        "Goodbye!",
+        "See you later",
+        "Dadah!"
     ]
 }
