@@ -27,13 +27,15 @@ class ChatRequest(BaseModel):
         return v.strip()
 
 class ChatResponse(BaseModel):
-    """Response model for chat conversation"""
+    """Response model for hybrid chat conversation"""
     message: str = Field(..., description="Bot response message")
     intent: str = Field(..., description="Detected intent category")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Classification confidence")
-    response_type: str = Field(..., description="Type of response (template, generated, etc.)")
+    mode: str = Field(..., description="Processing mode: knowledge, conversational, or fallback")
+    source: str = Field(..., description="Response source: qa_extraction, template, or fallback")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional response metadata")
+    processing_time_ms: float = Field(..., description="Total processing time in milliseconds")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    debug_info: Optional[Dict[str, Any]] = Field(None, description="Debug information if requested")
 
 class ClassificationRequest(BaseModel):
     """Request model for single text classification"""
@@ -183,67 +185,84 @@ class ErrorResponse(BaseModel):
 
 # Sample test data for validation
 SAMPLE_TEST_DATA = {
-    "greeting": [
-        "Halo, selamat pagi!",
-        "Hai, apa kabar?",
+    # Knowledge-based samples
+    "product_features": [
+        "What are the main features of your chatbot platform?",
+        "Tell me about your AI capabilities",
+        "What can your chatbot do?",
+        "What features does your platform offer?",
+        "How does your chatbot work?"
+    ],
+    "pricing_basic": [
+        "How much does the basic plan cost?",
+        "What's included in the starter plan?",
+        "Tell me about your cheapest option",
+        "Basic plan pricing information",
+        "What does the $29 plan include?"
+    ],
+    "setup_guide": [
+        "How do I get started?",
+        "Setup instructions please",
+        "How to configure the chatbot?",
+        "Getting started guide",
+        "Initial setup steps"
+    ],
+    "privacy_policy": [
+        "What's your privacy policy?",
+        "How do you handle user data?",
+        "Data privacy information",
+        "What data do you collect?",
+        "Privacy and data protection"
+    ],
+    "account_creation": [
+        "How do I create an account?",
+        "Sign up process",
+        "How to register?",
+        "Account creation steps",
+        "New user registration"
+    ],
+    "company_about": [
+        "Tell me about your company",
+        "Who are you?",
+        "Company information",
+        "About your organization",
+        "Your company background"
+    ],
+    
+    # Conversational samples
+    "conversational_greeting": [
+        "Hello!",
+        "Hi there!",
         "Good morning!",
-        "Hello there!",
-        "Selamat siang!"
+        "Hey, how are you?",
+        "Greetings!"
     ],
-    "question": [
-        "Apa itu artificial intelligence?",
-        "Bagaimana cara kerja internet?",
-        "Kapan Indonesia merdeka?",
-        "Siapa presiden pertama Indonesia?",
-        "Berapa jarak bumi ke bulan?"
+    "conversational_thanks": [
+        "Thank you so much!",
+        "Thanks for your help",
+        "I appreciate it",
+        "Thanks a lot",
+        "Much appreciated"
     ],
-    "help_request": [
-        "Bisakah Anda membantu saya?",
-        "Saya butuh bantuan",
-        "Tolong bantu saya",
-        "Can you help me?",
-        "Mohon bantuannya"
-    ],
-    "information": [
-        "Saya ingin tahu tentang sejarah Indonesia",
-        "Beri saya informasi tentang kesehatan",
-        "Apa informasi terbaru tentang teknologi?",
-        "Saya perlu data tentang ekonomi",
-        "Informasi apa yang Anda miliki?"
-    ],
-    "weather": [
-        "Apakah besok hujan?",
-        "Bagaimana cuaca hari ini?",
-        "Berapa suhu udara sekarang?",
-        "Kapan musim hujan dimulai?",
-        "Cuaca besok cerah atau mendung?"
-    ],
-    "food_recipe": [
-        "Bagaimana cara masak nasi goreng?",
-        "Resep rendang yang enak gimana?",
-        "Bahan-bahan untuk membuat kue?",
-        "Cara memasak ayam bakar?",
-        "Resep masakan sederhana?"
-    ],
-    "technology": [
-        "Apa itu blockchain?",
-        "Bagaimana cara kerja AI?",
-        "Perbedaan hardware dan software?",
-        "Apa itu cloud computing?",
-        "Teknologi terbaru apa saja?"
-    ],
-    "smalltalk": [
-        "Apa kabar Anda hari ini?",
-        "Bagaimana cuaca di sana?",
-        "Terima kasih atas bantuannya",
-        "Semoga harimu menyenangkan",
-        "Nice to meet you!"
-    ],
-    "goodbye": [
-        "Selamat tinggal!",
-        "Sampai jumpa lagi",
+    "conversational_goodbye": [
         "Goodbye!",
         "See you later",
-        "Dadah!"
+        "Take care",
+        "Farewell",
+        "Bye bye"
+    ],
+    "conversational_chitchat": [
+        "How are you doing?",
+        "What's up?",
+        "How's your day?",
+        "Nice to meet you",
+        "How are things?"
+    ],
+    "conversational_feedback": [
+        "Great service!",
+        "I have some feedback",
+        "This is really helpful",
+        "Excellent response",
+        "Could be improved"
     ]
 }

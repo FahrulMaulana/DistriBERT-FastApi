@@ -14,6 +14,8 @@ from datetime import datetime
 # Internal imports
 from config import settings, RESPONSE_TEMPLATES
 from models.distilbert_handler import DistilBERTHandler
+from models.qa_handler import qa_handler
+from models.response_generator import knowledge_base, HybridResponseGenerator
 from api.models import (
     ClassificationRequest, ClassificationResponse,
     BatchClassificationRequest, BatchClassificationResponse,
@@ -32,6 +34,7 @@ logger = setup_logging(settings.log_level)
 
 # Global variables
 distilbert_handler = DistilBERTHandler()
+hybrid_generator = HybridResponseGenerator(qa_handler, knowledge_base)
 service_start_time = datetime.utcnow()
 
 # Lifespan manager for startup/shutdown
@@ -43,12 +46,16 @@ async def lifespan(app: FastAPI):
     logger.info(f"📊 Configuration: {settings.model_name} with {len(settings.intent_labels)} intents")
     
     # Initialize DistilBERT model
-    success = await distilbert_handler.initialize()
+    distilbert_success = await distilbert_handler.initialize()
     
-    if success:
-        logger.info("✅ DistilBERT service startup completed successfully!")
+    # Initialize hybrid system
+    hybrid_generator.set_classification_handler(distilbert_handler)
+    hybrid_success = await hybrid_generator.initialize()
+    
+    if distilbert_success and hybrid_success:
+        logger.info("✅ Hybrid QA system startup completed successfully!")
     else:
-        logger.error("❌ DistilBERT service startup failed - continuing with degraded functionality")
+        logger.error("❌ System startup failed - continuing with degraded functionality")
     
     yield
     
@@ -59,31 +66,29 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI application
 app = FastAPI(
-    title="DistilBERT General Chatbot Service",
+    title="Hybrid QA Chatbot Service",
     description="""
-    🤖 **General Purpose Chatbot with Intent Classification**
+    🤖 **Advanced Hybrid Question-Answering Chatbot**
     
-    This service provides intelligent intent classification for general conversations using DistilBERT neural networks combined with keyword matching for optimal accuracy.
+    This service combines DistilBERT classification with DistilBERT-Squad QA extraction to provide intelligent, context-aware responses from a comprehensive knowledge base.
     
     **Features:**
-    - ✨ Hybrid classification (Neural Network + Keywords)
-    - � General purpose intent categories
-    - 🚀 High-performance batch processing
-    - 📊 Detailed confidence scoring
-    - 🔍 Comprehensive debugging information
-    - 💾 Smart caching for faster responses
+    - 🧠 Hybrid QA system (Classification + Knowledge Extraction)
+    - 📚 Rich knowledge base with 25+ detailed contexts
+    - 🎯 Dual processing modes: Knowledge-based and Conversational
+    - ⚡ Sub-500ms response times with caching
+    - 🔍 Advanced question answering with confidence scoring
+    - 💾 Smart caching for optimal performance
     
-    **Available Intents:**
-    - `greeting` - Greetings and salutations
-    - `question` - General questions and inquiries
-    - `help_request` - Help and assistance requests
-    - `information` - Information seeking
-    - `weather` - Weather related questions
-    - `food_recipe` - Food and recipe questions
-    - `technology` - Technology related questions
-    - `smalltalk` - Casual conversation
-    - `goodbye` - Farewell messages
-    - `unknown` - Unrecognized intents
+    **Processing Modes:**
+    - **Knowledge Mode**: Uses QA extraction from detailed contexts
+    - **Conversational Mode**: Uses template responses for social interactions
+    - **Fallback Mode**: Intelligent fallback for edge cases
+    
+    **Categories:**
+    - Product (6 intents), Pricing (6 intents), Guides (6 intents)
+    - Policies (5 intents), Account (4 intents), Company (3 intents)
+    - Conversational (5 intents)
     """,
     version="1.0.0",
     contact={
@@ -170,7 +175,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 async def root():
     """Root endpoint - service information"""
     return {
-        "service": "DistilBERT General Chatbot Service",
+        "service": "Hybrid QA Chatbot Service",
         "version": "1.0.0",
         "status": "running",
         "model_loaded": distilbert_handler.is_loaded,
@@ -192,97 +197,64 @@ async def chat_conversation(
     authenticated: bool = Depends(verify_api_key)
 ):
     """
-    💬 **Chat conversation endpoint with intelligent responses**
+    💬 **Hybrid QA Chat Endpoint**
     
-    Processes user messages, classifies intent, and provides appropriate responses using templates.
+    Advanced conversational AI that combines intent classification with question-answering 
+    to provide intelligent responses from a comprehensive knowledge base.
+    
+    **Processing Flow:**
+    1. **Classification**: Identifies user intent using DistilBERT
+    2. **Mode Selection**: Chooses knowledge, conversational, or fallback mode
+    3. **Response Generation**: 
+       - Knowledge mode: QA extraction from detailed contexts
+       - Conversational mode: Template-based responses
+       - Fallback mode: Intelligent fallback responses
     
     **Example Usage:**
     ```python
     {
-        "message": "Kapan jadwal kuliah besok?",
+        "message": "What are the key features of your chatbot platform?",
         "user_id": "user123",
         "include_debug": false
     }
     ```
     
     **Returns:**
-    - Intelligent response based on classified intent
-    - Intent classification and confidence
-    - Optional debug information
+    - Intelligent context-aware responses
+    - Processing mode and source information
+    - Confidence scores and metadata
+    - Sub-500ms response times
     """
     try:
-        import random
+        # Generate hybrid response
+        response = await hybrid_generator.generate_response(
+            question=request.message,
+            user_id=request.user_id,
+            include_debug=request.include_debug
+        )
         
-        # Check cache first for classification
-        if settings.enable_caching:
-            cached_result = classification_cache.get(request.message)
-            if cached_result:
-                logger.debug(f"💾 Cache hit for message: {request.message[:50]}...")
-                classification_result = cached_result
-            else:
-                # Perform classification
-                if not distilbert_handler.is_loaded:
-                    raise ModelNotLoadedError("DistilBERT model not loaded")
-                
-                classification_result = await distilbert_handler.classify_intent(
-                    request.message, 
-                    request.include_debug
-                )
-                
-                # Cache result if confidence is high
-                if classification_result['confidence'] > 0.5:
-                    classification_cache.set(request.message, classification_result)
-        else:
-            # Perform classification without caching
-            if not distilbert_handler.is_loaded:
-                raise ModelNotLoadedError("DistilBERT model not loaded")
-            
-            classification_result = await distilbert_handler.classify_intent(
-                request.message, 
-                request.include_debug
-            )
-        
-        # Generate appropriate response based on intent
-        intent = classification_result['intent']
-        confidence = classification_result['confidence']
-        
-        # Get response template based on intent
-        if intent in RESPONSE_TEMPLATES and confidence > 0.3:
-            # Use template responses for recognized intents
-            response_options = RESPONSE_TEMPLATES[intent]
-            bot_message = random.choice(response_options)
-            response_type = "template"
-        else:
-            # Fallback response for low confidence or unknown intents
-            bot_message = "Maaf, saya tidak yakin memahami pertanyaan Anda. Bisa tolong diulang dengan lebih spesifik? Atau hubungi layanan bantuan kampus untuk informasi lebih lanjut."
-            response_type = "fallback"
-        
-        # Prepare debug info if requested
-        debug_info = None
-        if request.include_debug:
-            debug_info = {
-                "classification": classification_result,
-                "available_templates": len(RESPONSE_TEMPLATES.get(intent, [])),
-                "response_selection": response_type,
-                "user_id": request.user_id
-            }
-        
+        # Convert to API response format
         return ChatResponse(
-            message=bot_message,
-            intent=intent,
-            confidence=confidence,
-            response_type=response_type,
-            debug_info=debug_info
+            message=response.message,
+            intent=response.intent,
+            confidence=response.confidence,
+            mode=response.mode,
+            source=response.source,
+            metadata=response.metadata,
+            processing_time_ms=response.processing_time_ms
         )
         
     except Exception as e:
-        logger.error(f"❌ Chat error: {str(e)}")
-        # Return a friendly error response instead of raising exception
+        logger.error(f"❌ Hybrid chat error: {str(e)}")
+        # Return error response
         return ChatResponse(
-            message="Maaf, saya mengalami gangguan sementara. Silakan coba lagi dalam beberapa saat atau hubungi layanan bantuan kampus.",
+            message="I apologize, but I'm experiencing technical difficulties. Please try again in a moment.",
             intent="error",
             confidence=0.0,
-            response_type="error"
+            mode="fallback",
+            source="error",
+            metadata={"error": str(e)},
+            processing_time_ms=0.0
         )
 
 @app.post("/classify", response_model=ClassificationResponse, tags=["Classification"])
@@ -547,6 +519,18 @@ async def clear_classification_cache(authenticated: bool = Depends(verify_api_ke
         return {"message": "Cache cleared successfully"}
     else:
         return {"message": "Caching is disabled"}
+
+@app.get("/hybrid-stats", tags=["Monitoring"])
+async def get_hybrid_system_stats():
+    """🔍 Get comprehensive hybrid QA system statistics"""
+    try:
+        return {
+            "hybrid_system": hybrid_generator.get_stats(),
+            "service_uptime": (datetime.utcnow() - service_start_time).total_seconds(),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        return {"error": f"Failed to get hybrid stats: {str(e)}"}
 
 @app.get("/system-info", tags=["Monitoring"])
 async def get_system_information():

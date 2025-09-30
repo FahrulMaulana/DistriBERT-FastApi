@@ -14,19 +14,32 @@ class Settings(BaseSettings):
     max_sequence_length: int = 512  # Longer for QA context
     batch_size: int = 16
     
-    # Intent Labels for General Chatbot
+    # Intent Labels for Hybrid QA System
     intent_labels: List[str] = [
-        "greeting",         # 0 - Greetings and salutations
-        "question",         # 1 - General questions and inquiries
-        "help_request",     # 2 - Help and assistance requests
-        "information",      # 3 - Information seeking
-        "weather",          # 4 - Weather related questions
-        "food_recipe",      # 5 - Food and recipe questions
-        "technology",       # 6 - Technology related questions
-        "smalltalk",        # 7 - Casual conversation
-        "goodbye",          # 8 - Farewell messages
-        "unknown"           # 9 - Unrecognized intents
+        # Knowledge-based intents (will use QA extraction)
+        "product_features", "product_technical_specs", "product_integration", 
+        "product_ai_capabilities", "product_security", "product_customization",
+        "pricing_basic", "pricing_professional", "pricing_enterprise", 
+        "pricing_api", "pricing_add_ons", "pricing_comparison",
+        "setup_guide", "integration_guide", "optimization_guide", 
+        "troubleshooting_guide", "advanced_features", "deployment_strategies",
+        "privacy_policy", "terms_of_service", "data_retention", 
+        "security_policy", "compliance_standards",
+        "account_creation", "account_management", "billing_support", "account_security",
+        "company_about", "company_team", "company_careers",
+        
+        # Conversational intents (will use templates)
+        "conversational_greeting", "conversational_thanks", "conversational_goodbye", 
+        "conversational_chitchat", "conversational_feedback",
+        
+        "unknown"  # Fallback intent
     ]
+    
+    # QA Configuration
+    qa_confidence_threshold: float = 0.3
+    qa_model_name: str = "distilbert-base-cased-distilled-squad"
+    qa_max_answer_length: int = 200
+    qa_cache_enabled: bool = True
     
     # Security
     api_key: str = "distilbert-service-2024"
@@ -53,100 +66,115 @@ class Settings(BaseSettings):
 # Global settings instance
 settings = Settings()
 
-# Enhanced keyword patterns for general chatbot
+# Enhanced keyword patterns for hybrid QA system
 INTENT_KEYWORDS: Dict[str, List[str]] = {
-    "greeting": [
+    # Product intents
+    "product_features": ["features", "capabilities", "functionality", "what can", "platform", "ai", "chatbot"],
+    "product_technical_specs": ["technical", "specs", "requirements", "architecture", "performance", "cpu", "memory"],
+    "product_integration": ["integration", "api", "connect", "crm", "platforms", "third party", "webhook"],
+    "product_ai_capabilities": ["ai", "artificial intelligence", "nlp", "machine learning", "sentiment", "language"],
+    "product_security": ["security", "encryption", "privacy", "gdpr", "compliance", "authentication"],
+    "product_customization": ["customize", "branding", "white label", "theme", "personality", "configuration"],
+    
+    # Pricing intents
+    "pricing_basic": ["basic plan", "starter", "small business", "cheap", "affordable", "29", "39"],
+    "pricing_professional": ["professional", "business", "99", "129", "growing", "advanced"],
+    "pricing_enterprise": ["enterprise", "unlimited", "custom", "499", "large", "organization"],
+    "pricing_api": ["api pricing", "pay per use", "developer", "calls", "usage based"],
+    "pricing_add_ons": ["add-on", "additional", "extra", "premium", "voice", "analytics"],
+    "pricing_comparison": ["compare", "difference", "plans", "which plan", "vs", "versus"],
+    
+    # Guide intents
+    "setup_guide": ["setup", "getting started", "how to start", "configuration", "initial"],
+    "integration_guide": ["how to integrate", "connect", "embed", "implementation"],
+    "optimization_guide": ["optimize", "improve", "performance", "best practices"],
+    "troubleshooting_guide": ["troubleshoot", "problem", "issue", "error", "not working"],
+    "advanced_features": ["advanced", "custom", "sophisticated", "complex"],
+    "deployment_strategies": ["deploy", "production", "rollout", "implementation"],
+    
+    # Policy intents  
+    "privacy_policy": ["privacy", "data collection", "personal information"],
+    "terms_of_service": ["terms", "conditions", "agreement", "usage policy"],
+    "data_retention": ["data retention", "how long", "storage", "delete"],
+    "security_policy": ["security policy", "protection", "safety"],
+    "compliance_standards": ["compliance", "certification", "standards", "audit"],
+    
+    # Account intents
+    "account_creation": ["create account", "sign up", "register", "new account"],
+    "account_management": ["manage account", "profile", "settings", "update"],
+    "billing_support": ["billing", "payment", "invoice", "refund", "subscription"],
+    "account_security": ["account security", "password", "login", "authentication"],
+    
+    # Company intents
+    "company_about": ["about", "company", "who are you", "background", "story"],
+    "company_team": ["team", "employees", "staff", "founders", "leadership"],
+    "company_careers": ["career", "job", "hiring", "work", "employment"],
+    
+    # Conversational intents
+    "conversational_greeting": [
         "halo", "hai", "hello", "hi", "selamat pagi", "selamat siang", 
-        "selamat sore", "selamat malam", "good morning", "good afternoon",
-        "good evening", "good night", "hey", "morning", "evening"
+        "good morning", "good afternoon", "hey", "morning"
     ],
-    "question": [
-        "apa", "bagaimana", "kapan", "dimana", "mengapa", "kenapa",
-        "what", "how", "when", "where", "why", "who", "which",
-        "siapa", "mana", "berapa", "bisakah", "dapatkah", "can", "could"
+    "conversational_thanks": [
+        "terima kasih", "thanks", "thank you", "appreciate", "grateful"
     ],
-    "help_request": [
-        "bantuan", "tolong", "help", "assist", "bantu", "mohon",
-        "please", "bisa bantu", "could you help", "need help",
-        "butuh bantuan", "minta tolong", "assistance"
-    ],
-    "information": [
-        "informasi", "info", "berita", "news", "data", "fakta",
-        "information", "details", "penjelasan", "explanation",
-        "tahu", "know", "tentang", "about", "mengenai", "regarding"
-    ],
-    "weather": [
-        "cuaca", "hujan", "panas", "dingin", "ujan", "weather",
-        "temperature", "suhu", "iklim", "climate", "cerah", "mendung",
-        "sunny", "cloudy", "rainy", "hot", "cold", "warm"
-    ],
-    "food_recipe": [
-        "makanan", "food", "resep", "recipe", "masak", "cook",
-        "cooking", "memasak", "bahan", "ingredient", "hidangan",
-        "dish", "menu", "makan", "eat", "eating", "restoran", "restaurant"
-    ],
-    "technology": [
-        "teknologi", "technology", "komputer", "computer", "software",
-        "hardware", "internet", "programming", "coding", "aplikasi",
-        "application", "app", "sistem", "system", "gadget", "smartphone"
-    ],
-    "smalltalk": [
-        "bagaimana kabar", "apa kabar", "how are you", "terima kasih",
-        "thanks", "thank you", "maaf", "sorry", "permisi", "excuse me",
-        "senang", "happy", "sedih", "sad", "baik", "good", "fine"
-    ],
-    "goodbye": [
+    "conversational_goodbye": [
         "selamat tinggal", "goodbye", "bye", "see you", "sampai jumpa",
-        "dadah", "farewell", "until next time", "take care",
-        "selamat jalan", "good bye", "bye bye"
+        "take care", "farewell"
+    ],
+    "conversational_chitchat": [
+        "bagaimana kabar", "apa kabar", "how are you", "what's up", "nice to meet"
+    ],
+    "conversational_feedback": [
+        "feedback", "suggestion", "comment", "opinion", "review"
     ]
 }
 
-# Response templates for general chatbot
+# Knowledge-based intents (use QA extraction)
+KNOWLEDGE_INTENTS = [
+    "product_features", "product_technical_specs", "product_integration", 
+    "product_ai_capabilities", "product_security", "product_customization",
+    "pricing_basic", "pricing_professional", "pricing_enterprise", 
+    "pricing_api", "pricing_add_ons", "pricing_comparison",
+    "setup_guide", "integration_guide", "optimization_guide", 
+    "troubleshooting_guide", "advanced_features", "deployment_strategies",
+    "privacy_policy", "terms_of_service", "data_retention", 
+    "security_policy", "compliance_standards",
+    "account_creation", "account_management", "billing_support", "account_security",
+    "company_about", "company_team", "company_careers"
+]
+
+# Conversational intents (use templates)
+CONVERSATIONAL_INTENTS = [
+    "conversational_greeting", "conversational_thanks", "conversational_goodbye", 
+    "conversational_chitchat", "conversational_feedback"
+]
+
+# Response templates for conversational intents
 RESPONSE_TEMPLATES: Dict[str, List[str]] = {
-    "greeting": [
-        "Halo! Selamat datang! Ada yang bisa saya bantu hari ini?",
-        "Hai! Saya di sini untuk membantu Anda. Silakan tanyakan apa saja.",
-        "Selamat pagi! Semoga hari Anda menyenangkan. Bagaimana saya bisa membantu?"
+    "conversational_greeting": [
+        "Hello! Welcome to our chatbot service. How can I assist you today?",
+        "Hi there! I'm here to help you with any questions about our platform.",
+        "Good day! I'm your AI assistant. What would you like to know?"
     ],
-    "question": [
-        "Itu pertanyaan yang menarik! Saya akan mencoba membantu menjawabnya.",
-        "Terima kasih atas pertanyaannya. Biarkan saya membantu Anda mencari jawabannya.",
-        "Saya akan berusaha memberikan informasi yang Anda butuhkan."
+    "conversational_thanks": [
+        "You're very welcome! I'm glad I could help.",
+        "Happy to assist! Is there anything else you'd like to know?",
+        "My pleasure! Feel free to ask if you have more questions."
     ],
-    "help_request": [
-        "Tentu saja! Saya siap membantu Anda. Silakan jelaskan apa yang Anda butuhkan.",
-        "Dengan senang hati saya akan membantu. Apa yang bisa saya lakukan untuk Anda?",
-        "Saya di sini untuk membantu. Silakan beri tahu saya apa yang Anda perlukan."
+    "conversational_goodbye": [
+        "Goodbye! Thank you for using our service. Have a great day!",
+        "See you later! Don't hesitate to return if you need more help.",
+        "Take care! I'm always here when you need assistance."
     ],
-    "information": [
-        "Saya akan mencari informasi yang Anda butuhkan. Bisa tolong lebih spesifik?",
-        "Untuk informasi yang lebih akurat, bisa Anda jelaskan lebih detail tentang apa yang ingin diketahui?",
-        "Saya siap memberikan informasi. Topik apa yang ingin Anda ketahui lebih lanjut?"
+    "conversational_chitchat": [
+        "I'm doing great, thank you for asking! How can I help you today?",
+        "I'm here and ready to assist you. What's on your mind?",
+        "Thanks for the friendly greeting! What would you like to know about our service?"
     ],
-    "weather": [
-        "Untuk informasi cuaca yang akurat, saya sarankan Anda mengecek aplikasi cuaca atau situs BMKG.",
-        "Saya tidak bisa memberikan prakiraan cuaca real-time, tapi Anda bisa mengecek aplikasi cuaca di ponsel Anda.",
-        "Informasi cuaca terkini bisa Anda dapatkan dari BMKG atau aplikasi cuaca terpercaya."
-    ],
-    "food_recipe": [
-        "Wah, menarik sekali! Untuk resep masakan, saya sarankan Anda mencari di website resep atau aplikasi memasak.",
-        "Saya tidak memiliki database resep lengkap, tapi Anda bisa mencari resep di internet atau bertanya pada chef profesional.",
-        "Untuk resep yang akurat dan detail, lebih baik konsultasi dengan ahli masak atau cari di sumber resep terpercaya."
-    ],
-    "technology": [
-        "Teknologi memang berkembang pesat! Untuk informasi teknis yang spesifik, mungkin perlu konsultasi dengan ahli IT.",
-        "Itu topik teknologi yang menarik. Untuk detail yang lebih teknis, saya sarankan mencari di dokumentasi resmi atau forum teknologi.",
-        "Bidang teknologi sangat luas. Bisa tolong lebih spesifik tentang aspek teknologi yang ingin dibahas?"
-    ],
-    "smalltalk": [
-        "Terima kasih sudah bertanya! Saya baik-baik saja dan siap membantu Anda.",
-        "Saya senang bisa mengobrol dengan Anda! Ada hal lain yang ingin dibicarakan?",
-        "Ngobrol dengan Anda menyenangkan! Bagaimana hari Anda berjalan?"
-    ],
-    "goodbye": [
-        "Selamat tinggal! Terima kasih sudah menggunakan layanan saya. Sampai jumpa lagi!",
-        "Sampai jumpa! Jangan ragu untuk kembali jika butuh bantuan lagi.",
-        "Dadah! Semoga hari Anda menyenangkan. Take care!"
+    "conversational_feedback": [
+        "Thank you for your feedback! We really value your input and use it to improve our service.",
+        "I appreciate you taking the time to share your thoughts. Your feedback helps us get better.",
+        "That's valuable feedback! We'll definitely consider it for future improvements."
     ]
 }
